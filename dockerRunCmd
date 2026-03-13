@@ -1,0 +1,18 @@
+# 3. 启动容器（专门负责启动，无重复逻辑）
+docker run -d --name squid \
+  -p 3128:3128 \
+  --restart=always \
+  -v /data/squid/logs:/var/log/squid \
+  -v /data/squid/spool:/var/spool/squid \
+  --entrypoint /bin/sh \
+  squid-compile:v1 \
+  -c "
+    # 创建缺失目录并授权
+    mkdir -p /var/run/squid /tmp/squid-coredump;
+    chown -R squid:squid /var/log/squid /var/spool/squid /var/run/squid /tmp/squid-coredump;
+    chmod 777 /var/log/squid /var/spool/squid /var/run/squid /tmp/squid-coredump;
+    # 初始化缓存目录
+    squid -z -N -f /etc/squid/squid.conf;
+    # 启动Squid（root启动后切换到squid用户）
+    exec squid -N -d 1 -f /etc/squid/squid.conf -u squid;
+  "
